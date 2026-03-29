@@ -89,6 +89,7 @@ class Deadline(BaseModel):
     date: str
     category: str
     important: bool = False
+    completed: bool = False
 
 class Note(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -170,6 +171,20 @@ async def get_emergency_contacts():
 async def get_deadlines():
     deadlines = await db.deadlines.find().sort("date", 1).to_list(100)
     return [Deadline(**d) for d in deadlines]
+
+@api_router.put("/deadlines/{deadline_id}/toggle")
+async def toggle_deadline_completion(deadline_id: str):
+    deadline = await db.deadlines.find_one({"id": deadline_id})
+    if not deadline:
+        raise HTTPException(status_code=404, detail="Deadline not found")
+    
+    new_completed = not deadline.get("completed", False)
+    await db.deadlines.update_one(
+        {"id": deadline_id}, 
+        {"$set": {"completed": new_completed}}
+    )
+    updated = await db.deadlines.find_one({"id": deadline_id})
+    return Deadline(**updated)
 
 # Notes Endpoints (CRUD)
 @api_router.get("/notes", response_model=List[Note])

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ViewStyle, Platform } from 'react-native';
 import { COLORS, BORDER_RADIUS, SHADOWS, SPACING } from '../constants/theme';
 import { useSettings } from '../context/SettingsContext';
 
@@ -37,6 +37,10 @@ export default function Card({ children, style, onPress, variant = 'default' }: 
   return <View style={cardStyle}>{children}</View>;
 }
 
+const noShadow = Platform.OS === 'web' 
+  ? { boxShadow: 'none' } 
+  : { shadowOpacity: 0, elevation: 0 };
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.cardBackground,
@@ -50,8 +54,7 @@ const styles = StyleSheet.create({
   outlined: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowOpacity: 0,
-    elevation: 0,
+    ...noShadow,
   },
   highContrast: {
     backgroundColor: COLORS.highContrastBg,

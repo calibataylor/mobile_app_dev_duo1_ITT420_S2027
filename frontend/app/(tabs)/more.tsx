@@ -12,17 +12,17 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
-import { useSettings } from '../../src/context/SettingsContext';
-import { useApi } from '../../src/hooks/useApi';
-import { Announcement, FAQ, Resource, EmergencyContact, Deadline } from '../../src/types';
-import ThemedText from '../../src/components/ThemedText';
-import Card from '../../src/components/Card';
-import Button from '../../src/components/Button';
-import LoadingScreen from '../../src/components/LoadingScreen';
-import EmptyState from '../../src/components/EmptyState';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '@/src/constants/theme';
+import { useSettings } from '@/src/context/SettingsContext';
+import { useApi } from '@/src/hooks/useApi';
+import { Announcement, FAQ, Resource, EmergencyContact, Deadline } from '@/src/types';
+import ThemedText from '@/src/components/ThemedText';
+import Card from '@/src/components/Card';
+import Button from '@/src/components/Button';
+import LoadingScreen from '@/src/components/LoadingScreen';
+import EmptyState from '@/src/components/EmptyState';
 
-type Section = 'announcements' | 'admissions' | 'social' | 'resources' | 'emergency' | 'deadlines' | 'notes' | 'faq' | 'about' | 'favorites';
+type Section = 'announcements' | 'admissions' | 'social' | 'resources' | 'emergency' | 'deadlines' | 'notes' | 'faq' | 'about' | 'favorites' | 'campus';
 
 const SECTIONS = [
   { id: 'announcements', title: 'Announcements', icon: 'megaphone', color: '#F59E0B' },
@@ -33,6 +33,7 @@ const SECTIONS = [
   { id: 'deadlines', title: 'Deadlines', icon: 'calendar', color: '#EC4899' },
   { id: 'notes', title: 'My Notes', icon: 'document-text', color: '#6366F1' },
   { id: 'faq', title: 'FAQ', icon: 'help-circle', color: '#14B8A6' },
+  { id: 'campus', title: 'Campus Map', icon: 'map', color: '#06B6D4' },
   { id: 'favorites', title: 'Favorites', icon: 'heart', color: '#F43F5E' },
   { id: 'about', title: 'About', icon: 'information-circle', color: '#64748B' },
 ];
@@ -55,6 +56,17 @@ export default function MoreScreen() {
   const { data: resources } = useApi<Resource[]>('/resources');
   const { data: emergencyContacts } = useApi<EmergencyContact[]>('/emergency-contacts');
   const { data: deadlines, refetch: refetchDeadlines } = useApi<Deadline[]>('/deadlines');
+
+  const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+  const toggleDeadlineCompletion = async (deadlineId: string) => {
+    try {
+      await fetch(`${API_BASE}/api/deadlines/${deadlineId}/toggle`, { method: 'PUT' });
+      refetchDeadlines();
+    } catch (error) {
+      console.error('Failed to toggle deadline:', error);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -254,23 +266,45 @@ export default function MoreScreen() {
         return (
           <View style={styles.modalContent}>
             <ThemedText variant="title" style={styles.modalTitle}>Deadline Tracker</ThemedText>
+            <ThemedText variant="caption" color={COLORS.textSecondary} style={styles.deadlineHint}>
+              Tap the checkbox to mark deadlines as complete
+            </ThemedText>
             <ScrollView showsVerticalScrollIndicator={false}>
               {deadlines?.map((deadline) => (
-                <Card key={deadline.id} style={styles.deadlineCard}>
-                  <View style={styles.deadlineHeader}>
-                    <View style={[styles.categoryChip, deadline.important && styles.importantChip]}>
-                      <ThemedText variant="caption" color={COLORS.white}>
-                        {deadline.category}
+                <Card key={deadline.id} style={[styles.deadlineCard, deadline.completed && styles.completedCard]}>
+                  <View style={styles.deadlineRow}>
+                    <TouchableOpacity
+                      style={[styles.checkbox, deadline.completed && styles.checkboxChecked]}
+                      onPress={() => toggleDeadlineCompletion(deadline.id)}
+                      accessibilityLabel={deadline.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                      accessibilityRole="checkbox"
+                    >
+                      {deadline.completed && (
+                        <Ionicons name="checkmark" size={18} color={COLORS.white} />
+                      )}
+                    </TouchableOpacity>
+                    <View style={styles.deadlineContent}>
+                      <View style={styles.deadlineHeader}>
+                        <View style={[styles.categoryChip, deadline.important && styles.importantChip]}>
+                          <ThemedText variant="caption" color={COLORS.white}>
+                            {deadline.category}
+                          </ThemedText>
+                        </View>
+                        <ThemedText variant="caption" color={deadline.important ? COLORS.error : COLORS.textSecondary}>
+                          {deadline.date}
+                        </ThemedText>
+                      </View>
+                      <ThemedText 
+                        variant="subtitle" 
+                        style={deadline.completed && styles.completedText}
+                      >
+                        {deadline.title}
+                      </ThemedText>
+                      <ThemedText variant="body" color={COLORS.textSecondary}>
+                        {deadline.description}
                       </ThemedText>
                     </View>
-                    <ThemedText variant="caption" color={deadline.important ? COLORS.error : COLORS.textSecondary}>
-                      {deadline.date}
-                    </ThemedText>
                   </View>
-                  <ThemedText variant="subtitle">{deadline.title}</ThemedText>
-                  <ThemedText variant="body" color={COLORS.textSecondary}>
-                    {deadline.description}
-                  </ThemedText>
                 </Card>
               ))}
             </ScrollView>
@@ -319,6 +353,50 @@ export default function MoreScreen() {
                 </ThemedText>
               </View>
             )}
+          </View>
+        );
+
+      case 'campus':
+        return (
+          <View style={styles.modalContent}>
+            <ThemedText variant="title" style={styles.modalTitle}>Campus Map</ThemedText>
+            <Card style={styles.campusCard}>
+              <View style={styles.campusIcon}>
+                <Ionicons name="location" size={48} color={COLORS.gold} />
+              </View>
+              <ThemedText variant="subtitle" style={styles.campusTitle}>
+                University of the Commonwealth Caribbean
+              </ThemedText>
+              <ThemedText variant="body" color={COLORS.textSecondary} style={styles.campusAddress}>
+                17 Worthington Avenue{'\n'}Kingston 5, Jamaica
+              </ThemedText>
+              <View style={styles.campusInfo}>
+                <View style={styles.campusInfoItem}>
+                  <Ionicons name="business" size={20} color={COLORS.navy} />
+                  <ThemedText variant="body" style={styles.campusInfoText}>
+                    IT Department: IT Building, Floor 2
+                  </ThemedText>
+                </View>
+                <View style={styles.campusInfoItem}>
+                  <Ionicons name="time" size={20} color={COLORS.navy} />
+                  <ThemedText variant="body" style={styles.campusInfoText}>
+                    Office Hours: Mon-Fri 8AM - 5PM
+                  </ThemedText>
+                </View>
+                <View style={styles.campusInfoItem}>
+                  <Ionicons name="car" size={20} color={COLORS.navy} />
+                  <ThemedText variant="body" style={styles.campusInfoText}>
+                    Student Parking: Lots B & C
+                  </ThemedText>
+                </View>
+              </View>
+              <Button
+                title="Open in Maps"
+                onPress={() => Linking.openURL('https://maps.google.com/?q=University+of+the+Commonwealth+Caribbean+Jamaica')}
+                icon="navigate"
+                fullWidth
+              />
+            </Card>
           </View>
         );
 
@@ -577,6 +655,39 @@ const styles = StyleSheet.create({
   deadlineCard: {
     marginBottom: SPACING.md,
   },
+  completedCard: {
+    opacity: 0.7,
+    backgroundColor: COLORS.lightGray,
+  },
+  deadlineHint: {
+    marginBottom: SPACING.md,
+  },
+  deadlineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.navy,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  deadlineContent: {
+    flex: 1,
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: COLORS.textSecondary,
+  },
   deadlineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -623,5 +734,33 @@ const styles = StyleSheet.create({
   },
   version: {
     marginTop: SPACING.md,
+  },
+  campusCard: {
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  campusIcon: {
+    marginBottom: SPACING.md,
+  },
+  campusTitle: {
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  campusAddress: {
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  campusInfo: {
+    width: '100%',
+    marginBottom: SPACING.lg,
+  },
+  campusInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  campusInfoText: {
+    marginLeft: SPACING.sm,
+    flex: 1,
   },
 });

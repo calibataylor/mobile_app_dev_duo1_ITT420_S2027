@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants/theme';
-import { useSettings } from '../../src/context/SettingsContext';
+import { COLORS } from '@/src/constants/theme';
+import { useSettings } from '@/src/context/SettingsContext';
 
 export default function TabLayout() {
   const { highContrast, fontScale } = useSettings();

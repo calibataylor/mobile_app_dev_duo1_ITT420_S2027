@@ -9,14 +9,14 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
-import { useSettings } from '../../src/context/SettingsContext';
-import { useApi } from '../../src/hooks/useApi';
-import { Course } from '../../src/types';
-import ThemedText from '../../src/components/ThemedText';
-import Card from '../../src/components/Card';
-import LoadingScreen from '../../src/components/LoadingScreen';
-import ErrorScreen from '../../src/components/ErrorScreen';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '@/src/constants/theme';
+import { useSettings } from '@/src/context/SettingsContext';
+import { useApi } from '@/src/hooks/useApi';
+import { Course } from '@/src/types';
+import ThemedText from '@/src/components/ThemedText';
+import Card from '@/src/components/Card';
+import LoadingScreen from '@/src/components/LoadingScreen';
+import ErrorScreen from '@/src/components/ErrorScreen';
 
 export default function CoursesScreen() {
   const router = useRouter();

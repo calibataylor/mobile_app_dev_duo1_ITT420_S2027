@@ -10,10 +10,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
-import { useSettings } from '../../src/context/SettingsContext';
-import ThemedText from '../../src/components/ThemedText';
-import Card from '../../src/components/Card';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '@/src/constants/theme';
+import { useSettings } from '@/src/context/SettingsContext';
+import ThemedText from '@/src/components/ThemedText';
+import Card from '@/src/components/Card';
 
 const QUICK_LINKS = [
   { id: 'faculty', title: 'Faculty', icon: 'people', route: '/(tabs)/faculty', color: '#3B82F6' },

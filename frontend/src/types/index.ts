@@ -67,6 +67,7 @@ export interface Deadline {
   date: string;
   category: string;
   important: boolean;
+  completed: boolean;
 }
 
 export interface Note {

@@ -1,4 +1,6 @@
 // UCC Connect Theme Constants
+import { Platform } from 'react-native';
+
 export const COLORS = {
   // Primary Colors
   navy: '#0D2340',
@@ -59,26 +61,24 @@ export const BORDER_RADIUS = {
   full: 999,
 };
 
+// Platform-compatible shadows
+const createShadow = (offsetY: number, blur: number, opacity: number, elevation: number) => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: `0px ${offsetY}px ${blur}px rgba(0, 0, 0, ${opacity})`,
+    };
+  }
+  return {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: offsetY },
+    shadowOpacity: opacity,
+    shadowRadius: blur,
+    elevation: elevation,
+  };
+};
+
 export const SHADOWS = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
+  sm: createShadow(1, 2, 0.05, 1),
+  md: createShadow(2, 4, 0.08, 3),
+  lg: createShadow(4, 8, 0.1, 5),
 };
