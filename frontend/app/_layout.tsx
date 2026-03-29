@@ -32,6 +32,9 @@ function RootLayoutContent() {
         <Stack.Screen name="consultation" options={{ title: 'Request Consultation', presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ title: 'Accessibility Settings', presentation: 'modal' }} />
         <Stack.Screen name="note-editor" options={{ title: 'Edit Note', presentation: 'modal' }} />
+        <Stack.Screen name="gpa" options={{ title: 'GPA Calculator', presentation: 'card' }} />
+        <Stack.Screen name="schedule" options={{ title: 'Class Schedule', presentation: 'card' }} />
+        <Stack.Screen name="payments" options={{ title: 'Pay Fees', presentation: 'card' }} />
       </Stack>
     </>
   );

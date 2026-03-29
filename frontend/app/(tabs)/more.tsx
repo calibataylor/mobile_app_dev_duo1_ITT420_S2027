@@ -22,9 +22,12 @@ import Button from '@/src/components/Button';
 import LoadingScreen from '@/src/components/LoadingScreen';
 import EmptyState from '@/src/components/EmptyState';
 
-type Section = 'announcements' | 'admissions' | 'social' | 'resources' | 'emergency' | 'deadlines' | 'notes' | 'faq' | 'about' | 'favorites' | 'campus';
+type Section = 'announcements' | 'admissions' | 'social' | 'resources' | 'emergency' | 'deadlines' | 'notes' | 'faq' | 'about' | 'favorites' | 'campus' | 'gpa' | 'schedule' | 'payments';
 
 const SECTIONS = [
+  { id: 'payments', title: 'Pay Fees', icon: 'card', color: '#059669' },
+  { id: 'gpa', title: 'GPA Calculator', icon: 'calculator', color: '#7C3AED' },
+  { id: 'schedule', title: 'Class Schedule', icon: 'time', color: '#0891B2' },
   { id: 'announcements', title: 'Announcements', icon: 'megaphone', color: '#F59E0B' },
   { id: 'admissions', title: 'Admissions', icon: 'school', color: '#3B82F6' },
   { id: 'social', title: 'Social Media', icon: 'share-social', color: '#8B5CF6' },
@@ -77,6 +80,12 @@ export default function MoreScreen() {
   const handleSectionPress = (sectionId: Section) => {
     if (sectionId === 'notes') {
       router.push('/note-editor');
+    } else if (sectionId === 'gpa') {
+      router.push('/gpa');
+    } else if (sectionId === 'schedule') {
+      router.push('/schedule');
+    } else if (sectionId === 'payments') {
+      router.push('/payments');
     } else if (sectionId === 'social') {
       setActiveSection('social');
     } else {

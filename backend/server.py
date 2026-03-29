@@ -106,7 +106,77 @@ class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
-# ============== API Endpoints ==============
+# ============== New Models for GPA, Schedule, Grades, Payments ==============
+
+class GradeEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    course_code: str
+    course_name: str
+    credits: int
+    grade: str  # A, A-, B+, B, B-, C+, C, C-, D+, D, F
+    semester: str
+    year: str
+
+class GradeCreate(BaseModel):
+    course_code: str
+    course_name: str
+    credits: int
+    grade: str
+    semester: str
+    year: str
+
+class ScheduleEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    course_code: str
+    course_name: str
+    day: str  # Monday, Tuesday, etc.
+    start_time: str  # "09:00"
+    end_time: str  # "10:30"
+    room: str
+    lecturer: str
+    color: str = "#3B82F6"
+
+class ScheduleCreate(BaseModel):
+    course_code: str
+    course_name: str
+    day: str
+    start_time: str
+    end_time: str
+    room: str
+    lecturer: str
+    color: str = "#3B82F6"
+
+class Payment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type: str  # tuition, lab_fee, application, materials
+    description: str
+    amount: float
+    currency: str = "JMD"
+    status: str = "pending"  # pending, completed, failed
+    student_name: str
+    student_id: str
+    card_last_four: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+
+class PaymentCreate(BaseModel):
+    type: str
+    description: str
+    amount: float
+    student_name: str
+    student_id: str
+    card_number: str
+    card_expiry: str
+    card_cvv: str
+    card_name: str
+
+class FeeItem(BaseModel):
+    id: str
+    name: str
+    description: str
+    amount: float
+    currency: str = "JMD"
+    category: str
 
 @api_router.get("/")
 async def root():
@@ -217,6 +287,160 @@ async def delete_note(note_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Note not found")
     return {"message": "Note deleted successfully"}
+
+# ============== Grade Endpoints ==============
+
+@api_router.get("/grades", response_model=List[GradeEntry])
+async def get_grades():
+    grades = await db.grades.find().sort([("year", -1), ("semester", -1)]).to_list(100)
+    return [GradeEntry(**g) for g in grades]
+
+@api_router.post("/grades", response_model=GradeEntry)
+async def create_grade(grade_data: GradeCreate):
+    grade = GradeEntry(**grade_data.dict())
+    await db.grades.insert_one(grade.dict())
+    return grade
+
+@api_router.delete("/grades/{grade_id}")
+async def delete_grade(grade_id: str):
+    result = await db.grades.delete_one({"id": grade_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Grade not found")
+    return {"message": "Grade deleted successfully"}
+
+# GPA Calculation Helper
+GRADE_POINTS = {
+    "A+": 4.0, "A": 4.0, "A-": 3.7,
+    "B+": 3.3, "B": 3.0, "B-": 2.7,
+    "C+": 2.3, "C": 2.0, "C-": 1.7,
+    "D+": 1.3, "D": 1.0, "D-": 0.7,
+    "F": 0.0
+}
+
+@api_router.get("/gpa")
+async def calculate_gpa():
+    grades = await db.grades.find().to_list(100)
+    if not grades:
+        return {"cumulative_gpa": 0.0, "total_credits": 0, "semesters": []}
+    
+    # Group by semester/year
+    semesters = {}
+    for g in grades:
+        key = f"{g['semester']} {g['year']}"
+        if key not in semesters:
+            semesters[key] = []
+        semesters[key].append(g)
+    
+    semester_gpas = []
+    total_points = 0
+    total_credits = 0
+    
+    for sem_key, sem_grades in semesters.items():
+        sem_points = 0
+        sem_credits = 0
+        for g in sem_grades:
+            points = GRADE_POINTS.get(g['grade'], 0.0)
+            credits = g['credits']
+            sem_points += points * credits
+            sem_credits += credits
+        
+        sem_gpa = sem_points / sem_credits if sem_credits > 0 else 0.0
+        semester_gpas.append({
+            "semester": sem_key,
+            "gpa": round(sem_gpa, 2),
+            "credits": sem_credits
+        })
+        total_points += sem_points
+        total_credits += sem_credits
+    
+    cumulative_gpa = total_points / total_credits if total_credits > 0 else 0.0
+    
+    return {
+        "cumulative_gpa": round(cumulative_gpa, 2),
+        "total_credits": total_credits,
+        "semesters": semester_gpas
+    }
+
+# ============== Schedule Endpoints ==============
+
+@api_router.get("/schedule", response_model=List[ScheduleEntry])
+async def get_schedule():
+    schedule = await db.schedule.find().to_list(100)
+    return [ScheduleEntry(**s) for s in schedule]
+
+@api_router.post("/schedule", response_model=ScheduleEntry)
+async def create_schedule_entry(entry_data: ScheduleCreate):
+    entry = ScheduleEntry(**entry_data.dict())
+    await db.schedule.insert_one(entry.dict())
+    return entry
+
+@api_router.delete("/schedule/{entry_id}")
+async def delete_schedule_entry(entry_id: str):
+    result = await db.schedule.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule entry not found")
+    return {"message": "Schedule entry deleted successfully"}
+
+# ============== Payment Endpoints ==============
+
+@api_router.get("/fees", response_model=List[FeeItem])
+async def get_fees():
+    """Get available fee items that can be paid"""
+    fees = [
+        {"id": "tuition_sem", "name": "Semester Tuition", "description": "Full semester tuition fee", "amount": 150000.00, "currency": "JMD", "category": "tuition"},
+        {"id": "tuition_course", "name": "Per Course Fee", "description": "Single course tuition", "amount": 25000.00, "currency": "JMD", "category": "tuition"},
+        {"id": "lab_fee", "name": "IT Lab Fee", "description": "Computer lab access fee", "amount": 15000.00, "currency": "JMD", "category": "lab"},
+        {"id": "app_fee", "name": "Application Fee", "description": "New student application processing", "amount": 5000.00, "currency": "JMD", "category": "application"},
+        {"id": "exam_fee", "name": "Examination Fee", "description": "End of semester exam fee", "amount": 8000.00, "currency": "JMD", "category": "exam"},
+        {"id": "id_card", "name": "Student ID Card", "description": "Student identification card", "amount": 2500.00, "currency": "JMD", "category": "materials"},
+        {"id": "transcript", "name": "Official Transcript", "description": "Official academic transcript", "amount": 3000.00, "currency": "JMD", "category": "materials"},
+    ]
+    return [FeeItem(**f) for f in fees]
+
+@api_router.get("/payments", response_model=List[Payment])
+async def get_payments():
+    payments = await db.payments.find().sort("created_at", -1).to_list(100)
+    return [Payment(**p) for p in payments]
+
+@api_router.post("/payments", response_model=Payment)
+async def process_payment(payment_data: PaymentCreate):
+    """Process a payment (simulated for demo)"""
+    import random
+    import time
+    
+    # Simulate payment processing delay
+    time.sleep(0.5)
+    
+    # Simulate payment success (95% success rate for demo)
+    is_success = random.random() < 0.95
+    
+    # Mask card number
+    card_last_four = payment_data.card_number[-4:] if len(payment_data.card_number) >= 4 else "****"
+    
+    payment = Payment(
+        type=payment_data.type,
+        description=payment_data.description,
+        amount=payment_data.amount,
+        student_name=payment_data.student_name,
+        student_id=payment_data.student_id,
+        card_last_four=card_last_four,
+        status="completed" if is_success else "failed",
+        completed_at=datetime.utcnow() if is_success else None
+    )
+    
+    await db.payments.insert_one(payment.dict())
+    
+    if not is_success:
+        raise HTTPException(status_code=400, detail="Payment failed. Please try again.")
+    
+    return payment
+
+@api_router.get("/payments/{payment_id}", response_model=Payment)
+async def get_payment(payment_id: str):
+    payment = await db.payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return Payment(**payment)
 
 # ============== Seed Data ==============
 

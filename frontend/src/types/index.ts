@@ -77,3 +77,58 @@ export interface Note {
   created_at: string;
   updated_at: string;
 }
+
+export interface GradeEntry {
+  id: string;
+  course_code: string;
+  course_name: string;
+  credits: number;
+  grade: string;
+  semester: string;
+  year: string;
+}
+
+export interface ScheduleEntry {
+  id: string;
+  course_code: string;
+  course_name: string;
+  day: string;
+  start_time: string;
+  end_time: string;
+  room: string;
+  lecturer: string;
+  color: string;
+}
+
+export interface FeeItem {
+  id: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string;
+}
+
+export interface Payment {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: string;
+  student_name: string;
+  student_id: string;
+  card_last_four: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface GPAResult {
+  cumulative_gpa: number;
+  total_credits: number;
+  semesters: {
+    semester: string;
+    gpa: number;
+    credits: number;
+  }[];
+}
